@@ -1,4 +1,4 @@
-# @dotracel/welcome-banner
+# @hydrooj/welcome-banner
 
 **HydroOJ** 的可视化封面横幅（Banner）管理插件 — 在后台控制面板中可视化上传、预览、排序、配置首页轮播横幅，无需手写 JSON 配置。
 
@@ -14,18 +14,6 @@
 
 <img width="920" alt="banner management" src="docs/screenshot-manage.png" />
 
-## 功能特性
-
-- **可视化横幅管理** — 每张横幅缩略图预览，内联编辑链接 / 标题 / 替代文本，单张启用停用，拖拽排序，删除。
-- **图片作为用户附件上传** — 选文件即通过 HydroOJ 存储 API 存入你的用户附件，自动使用返回的 `/file/<uid>/<name>` 链接作为横幅图片；也支持直接填外链。
-- **拖拽排序** — 抓住左侧手柄拖动即可重排，AJAX 保存、整页不刷新。
-- **轮播配置** — 自动播放开关、间隔、淡入淡出 / 滑动切换、圆点指示器、左右箭头。
-- **外观配置** — 宽度、高度、圆角、图片填充方式（contain / cover）、模糊背景填充。
-- **悬停放大效果** — 开关 hover 放大并可调放大倍数。
-- **一键接入主页** — 缺少 `banner` 区块时，一个按钮自动写入首页配置。
-- **主页总开关** — 一键在首页启用 / 停用整个横幅。
-- **向后兼容** — 自动迁移旧版 `welcomeBanner.banners` 系统设置。
-
 ## 环境要求
 
 - HydroOJ v5.x
@@ -39,7 +27,7 @@
 以运行 HydroOJ 的用户身份执行：
 
 ```bash
-hydrooj install https://github.com/DotRacel/hydro-welcome-banner/releases/download/v2.0.0/dotracel-welcome-banner-2.0.0.tgz
+hydrooj install https://github.com/DotRacel/hydro-welcome-banner/releases/download/v2.0.0/hydrooj-welcome-banner-2.0.0.tgz
 pm2 restart hydrooj      # 或以你的方式重启 hydrooj 进程
 ```
 
@@ -87,10 +75,6 @@ pm2 restart hydrooj
 ```
 
 保存后刷新首页即可看到横幅。之后所有的增删改、排序、开关都在 **封面横幅管理** 页面完成，无需再动配置文件。
-
-## 图片存储说明
-
-上传的图片走 HydroOJ 常规的用户文件存储（`storage.put('user/<uid>/<filename>')`）并登记进你的用户文件列表，因此会计入文件配额、也会出现在文件管理里。横幅仅引用 `/file/<uid>/<filename>`。删除横幅时可选择一并删除底层附件。
 
 ## 卸载
 

@@ -1,5 +1,5 @@
 {
-  "name": "@dotracel/welcome-banner",
+  "name": "@hydrooj/welcome-banner",
   "version": "2.0.0",
   "description": "Visual welcome-banner manager for HydroOJ \u2014 upload/preview/delete banner slides in the admin control panel, image upload as user attachments, carousel & hover-zoom configuration.",
   "main": "index.ts",
