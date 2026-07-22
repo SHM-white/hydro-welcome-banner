@@ -304,7 +304,14 @@ class BannerManageHandler extends Handler {
         for (const item of map.values()) reordered.push(item);
         config.banners = reordered;
         await saveConfig(config);
-        this.response.redirect = this.url('manage_banner');
+        // The drag-and-drop UI persists over fetch(); answer it with a tiny body
+        // instead of a full-page redirect so nothing reloads. Plain form posts
+        // (no JS) still get the normal redirect back to the page.
+        if (this.request.headers['x-requested-with'] === 'XMLHttpRequest') {
+            this.response.body = { ok: true };
+        } else {
+            this.response.redirect = this.url('manage_banner');
+        }
     }
 
     // operation=delete — remove a slide, and its backing attachment when asked.
@@ -402,9 +409,10 @@ export function apply(ctx: Context) {
         'Alt text (optional)': '替代文本（可选）',
         Slides: '横幅列表',
         'No banner slides yet. Upload an image or add one by URL above.': '暂无横幅。请在上方上传图片或通过链接添加。',
-        'Move up': '上移',
-        'Move down': '下移',
         'Drag to reorder': '拖拽排序',
+        'Saving order…': '正在保存顺序…',
+        'Order saved': '顺序已保存',
+        'Failed to save order, reloading…': '保存顺序失败，正在重新加载…',
         Enable: '启用',
         Disable: '停用',
         Enabled: '已启用',

@@ -131,7 +131,7 @@
         <div class="wb-card__body">
           <div class="wb-card__meta">
             <span class="wb-badge {{ 'on' if b.enabled else 'off' }}">{{ _('Enabled') if b.enabled else _('Disabled') }}</span>
-            <span>#{{ loop.index }}</span>
+            <span class="wb-index">#{{ loop.index }}</span>
             {% if b.link %}<span>→ <code>{{ b.link }}</code></span>{% endif %}
           </div>
           <form method="post" class="wb-editrow">
@@ -146,12 +146,6 @@
             </button>
           </form>
           <div class="wb-actions" style="margin-top:8px;">
-            <form method="post"><input type="hidden" name="id" value="{{ b.id }}"><input type="hidden" name="dir" value="-1">
-              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 10px;" title="{{ _('Move up') }}">
-                <span class="icon icon-expand_less"></span> {{ _('Move up') }}</button></form>
-            <form method="post"><input type="hidden" name="id" value="{{ b.id }}"><input type="hidden" name="dir" value="1">
-              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 10px;" title="{{ _('Move down') }}">
-                <span class="icon icon-expand_more"></span> {{ _('Move down') }}</button></form>
             <form method="post"><input type="hidden" name="id" value="{{ b.id }}">
               <button name="operation" value="toggle" type="submit" class="rounded button" style="height:28px; padding:0 12px;">{{ _('Disable') if b.enabled else _('Enable') }}</button></form>
             <form method="post" onsubmit="return confirm('{{ _('Delete this banner slide?') }}');" style="margin-left:auto;">
@@ -166,18 +160,33 @@
       </div>
       {% endfor %}
     </div>
-    <form method="post" id="wb-reorder-form" style="display:none;">
-      <input type="hidden" name="operation" value="reorder">
-      <input type="hidden" name="order" id="wb-reorder-order">
-    </form>
+    <p class="wb-mini" id="wb-reorder-status" style="margin-top:10px; height:1em;"></p>
     <script>
     (function(){
       var container = document.querySelector('.wb-cards');
       if (!container) return;
-      var cards = Array.prototype.slice.call(container.querySelectorAll('.wb-card'));
+      var status = document.getElementById('wb-reorder-status');
+      function currentOrder(){ return Array.prototype.slice.call(container.querySelectorAll('.wb-card')).map(function(c){ return c.dataset.id; }); }
+      function clearMarks(){ container.querySelectorAll('.wb-card').forEach(function(c){ c.classList.remove('wb-drop-before','wb-drop-after'); }); }
+      function renumber(){ container.querySelectorAll('.wb-card').forEach(function(c, k){ var i = c.querySelector('.wb-index'); if (i) i.textContent = '#' + (k+1); }); }
       var dragEl = null;
-      function clearMarks(){ cards.forEach(function(c){ c.classList.remove('wb-drop-before','wb-drop-after'); }); }
-      cards.forEach(function(card){
+      var lastOrder = currentOrder().join(',');
+      // Persist a new order via AJAX so the page never reloads.
+      function persist(order){
+        if (status) { status.textContent = '{{ _('Saving order…') }}'; status.style.color = '#999'; }
+        fetch(location.pathname, {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+          body: 'operation=reorder&order=' + encodeURIComponent(order)
+        }).then(function(r){
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          if (status) { status.textContent = '{{ _('Order saved') }}'; status.style.color = '#1a7f37'; setTimeout(function(){ if (status.textContent === '{{ _('Order saved') }}') status.textContent = ''; }, 1800); }
+        }).catch(function(){
+          if (status) { status.textContent = '{{ _('Failed to save order, reloading…') }}'; status.style.color = '#c0392b'; }
+          setTimeout(function(){ location.reload(); }, 800);
+        });
+      }
+      container.querySelectorAll('.wb-card').forEach(function(card){
         var handle = card.querySelector('.wb-drag');
         if (!handle) return;
         // Only start a drag from the grip handle, so the inline inputs stay usable.
@@ -190,13 +199,10 @@
         card.addEventListener('dragend', function(){
           card.classList.remove('dragging'); card.removeAttribute('draggable'); clearMarks();
           if (!dragEl) return;
-          var order = Array.prototype.slice.call(container.querySelectorAll('.wb-card')).map(function(c){ return c.dataset.id; });
-          var original = cards.map(function(c){ return c.dataset.id; });
           dragEl = null;
-          if (order.join(',') !== original.join(',')) {
-            document.getElementById('wb-reorder-order').value = order.join(',');
-            document.getElementById('wb-reorder-form').submit();
-          }
+          var order = currentOrder();
+          renumber();
+          if (order.join(',') !== lastOrder) { lastOrder = order.join(','); persist(order.join(',')); }
         });
         card.addEventListener('dragover', function(e){
           e.preventDefault();
