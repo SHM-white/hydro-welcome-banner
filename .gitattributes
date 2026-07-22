@@ -1,5 +1,6 @@
-# The implementation is TypeScript; the Nunjucks/HTML templates are large but
-# are markup, not the project's language. Exclude them (and docs) from GitHub
-# Linguist stats so the repo is classified as TypeScript.
-templates/**/*.html linguist-detectable=false
+# Classify the repo as TypeScript. The Nunjucks/HTML templates are markup, not
+# the implementation language, so exclude all HTML (and docs) from GitHub
+# Linguist language stats.
+*.html linguist-detectable=false
+*.html linguist-vendored
 docs/** linguist-documentation
