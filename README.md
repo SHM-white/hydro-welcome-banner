@@ -1,4 +1,4 @@
-# @hucoj/welcome-banner
+# @dotracel/welcome-banner
 
 **HydroOJ** 的可视化封面横幅（Banner）管理插件 — 在后台控制面板中可视化上传、预览、排序、配置首页轮播横幅，无需手写 JSON 配置。
 
@@ -39,7 +39,7 @@
 以运行 HydroOJ 的用户身份执行：
 
 ```bash
-hydrooj install https://github.com/DotRacel/hydro-welcome-banner/releases/download/v2.0.0/hucoj-welcome-banner-2.0.0.tgz
+hydrooj install https://github.com/DotRacel/hydro-welcome-banner/releases/download/v2.0.0/dotracel-welcome-banner-2.0.0.tgz
 pm2 restart hydrooj      # 或以你的方式重启 hydrooj 进程
 ```
 
