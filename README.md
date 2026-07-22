@@ -1,6 +1,6 @@
 # @hydrooj/welcome-banner
 
-**HydroOJ** 的可视化封面横幅（Banner）管理插件 — 在后台控制面板中可视化上传、预览、排序、配置首页轮播横幅，无需手写 JSON 配置。
+**HydroOJ** 的可视化封面横幅管理插件 — 在后台控制面板中可视化上传、预览、排序、配置首页轮播横幅，无需手写 JSON 配置。
 
 > 入口：登录管理员账号后，进入控制面板，右侧属性栏 **封面横幅管理** 标签（`/manage/banner`）
 
@@ -8,7 +8,7 @@
 
 首页横幅轮播效果：
 
-<img width="920" alt="homepage banner" src="docs/screenshot-homepage.png" />
+<img width="1178" height="637" alt="Snapzy_2026-07-22_23-43-40_859" src="https://github.com/user-attachments/assets/aa20b974-829d-4cba-a932-3ec4bc39e20b" />
 
 后台可视化管理页面：
 
