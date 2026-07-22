@@ -1,0 +1,255 @@
+{% extends "manage_base.html" %}
+{% import "components/nothing.html" as nothing with context %}
+{% block manage_content %}
+<style>
+.wb-cards { display: flex; flex-direction: column; gap: 14px; }
+.wb-card {
+  display: flex; gap: 16px; align-items: stretch;
+  border: 1px solid var(--card-border-color, #e5e5e5);
+  border-radius: 10px; padding: 12px; background: var(--block-background, #fff);
+}
+.wb-card.disabled { opacity: .55; }
+.wb-thumb {
+  flex: 0 0 200px; height: 112px; border-radius: 8px; overflow: hidden;
+  background: #f2f3f5 center/contain no-repeat;
+  border: 1px solid rgba(0,0,0,.06);
+}
+.wb-thumb.cover { background-size: cover; }
+.wb-card__body { flex: 1 1 auto; min-width: 0; }
+.wb-card__meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 8px; font-size: .85rem; color: #666; }
+.wb-card__meta code { word-break: break-all; }
+.wb-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .72rem; font-weight: 600; }
+.wb-badge.on { background: #e3f6e9; color: #1a7f37; }
+.wb-badge.off { background: #f0f0f0; color: #999; }
+.wb-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.wb-actions form { display: inline; margin: 0; }
+.wb-editrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.wb-editrow .textbox { height: 30px; padding: 2px 8px; }
+.wb-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 850px) { .wb-grid2 { grid-template-columns: 1fr; } .wb-thumb { flex-basis: 130px; height: 84px; } }
+.wb-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 24px; }
+@media (max-width: 850px) { .wb-settings-grid { grid-template-columns: 1fr; } }
+.wb-field label { display: block; font-size: .85rem; color: #555; margin-bottom: 3px; }
+.wb-field .textbox, .wb-field .select { width: 100%; }
+.wb-check { display: flex; align-items: center; gap: 8px; padding-top: 20px; }
+.wb-mini { font-size: .8rem; color: #999; }
+/* preview */
+.wb-preview-wrap { max-width: 100%; margin: 0 auto; position: relative; overflow: hidden; }
+.wb-preview-slide { position: relative; width: 100%; }
+.wb-pv-bg { position:absolute; inset:0; background-size:cover; background-position:center; filter: blur(20px); transform: scale(1.1); opacity:.8; }
+.wb-pv-img { position:absolute; inset:0; background-position:center; background-repeat:no-repeat; transition: transform .3s ease; z-index:1; }
+.wb-pv-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:3; padding:6px 12px; background:rgba(0,0,0,.3); border-radius:20px; }
+.wb-pv-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.5); border:none; cursor:pointer; }
+.wb-pv-dot.active { background:#fff; width:22px; border-radius:11px; }
+</style>
+
+<div class="section">
+  <div class="section__header">
+    <h1 class="section__title">{{ _('Banner Management') }}</h1>
+    <div class="section__tools">
+      <span class="wb-mini">{{ config.banners|length }} {{ _('banner slides') }}</span>
+    </div>
+  </div>
+  <div class="section__body">
+    <p class="typo help-text">{{ _('Add / upload banner slides, reorder them and tune the carousel — changes take effect on the homepage immediately.') }}</p>
+    {% if hasHomepageSection %}
+      <blockquote class="note typo">{{ _('Banner section is already present in the homepage config.') }}</blockquote>
+    {% else %}
+      <blockquote class="warn typo">
+        {{ _('To display the banner you must include a `banner` section in the homepage config.') }}
+        <form method="post" style="margin-top:8px;">
+          <button name="operation" value="add_homepage" type="submit" class="rounded primary button">
+            <span class="icon icon-add"></span> {{ _('Add `banner` to homepage now') }}
+          </button>
+        </form>
+      </blockquote>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------------- Add / upload ---------------- #}
+<div class="section">
+  <div class="section__header"><h1 class="section__title">{{ _('Add banner') }}</h1></div>
+  <div class="section__body">
+    <div class="wb-grid2">
+      <div>
+        <h2 class="section__title" style="font-size:1rem;">{{ _('Upload as attachment') }}</h2>
+        <p class="wb-mini">{{ _('The image is stored in your user attachments; the returned /file link is used as the slide.') }}</p>
+        <form method="post" enctype="multipart/form-data">
+          <div class="wb-field" style="margin-bottom:8px;">
+            <label>{{ _('Choose file') }}</label>
+            <input type="file" name="file" accept="image/*" required>
+          </div>
+          <input class="textbox" name="link" placeholder="{{ _('Link (optional)') }}" style="margin-bottom:6px;">
+          <input class="textbox" name="title" placeholder="{{ _('Title (optional)') }}" style="margin-bottom:6px;">
+          <input class="textbox" name="alt" placeholder="{{ _('Alt text (optional)') }}" style="margin-bottom:8px;">
+          <button name="operation" value="upload" type="submit" class="rounded primary button">
+            <span class="icon icon-upload"></span> {{ _('Upload image') }}
+          </button>
+        </form>
+      </div>
+      <div>
+        <h2 class="section__title" style="font-size:1rem;">{{ _('Add by URL') }}</h2>
+        <p class="wb-mini">&nbsp;</p>
+        <form method="post">
+          <input class="textbox" name="image" placeholder="{{ _('Image URL') }}" required style="margin-bottom:6px;">
+          <input class="textbox" name="link" placeholder="{{ _('Link (optional)') }}" style="margin-bottom:6px;">
+          <input class="textbox" name="title" placeholder="{{ _('Title (optional)') }}" style="margin-bottom:6px;">
+          <input class="textbox" name="alt" placeholder="{{ _('Alt text (optional)') }}" style="margin-bottom:8px;">
+          <button name="operation" value="add_url" type="submit" class="rounded button">
+            <span class="icon icon-add"></span> {{ _('Add by URL') }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ---------------- Slides ---------------- #}
+<div class="section">
+  <div class="section__header"><h1 class="section__title">{{ _('Slides') }}</h1></div>
+  <div class="section__body">
+    {% if not config.banners.length %}
+      {{ nothing.render('No banner slides yet. Upload an image or add one by URL above.') }}
+    {% else %}
+    <div class="wb-cards">
+      {% for b in config.banners %}
+      <div class="wb-card {{ '' if b.enabled else 'disabled' }}">
+        <div class="wb-thumb {{ config.objectFit }}" style="background-image:url('{{ b.image }}');"></div>
+        <div class="wb-card__body">
+          <div class="wb-card__meta">
+            <span class="wb-badge {{ 'on' if b.enabled else 'off' }}">{{ _('Enabled') if b.enabled else _('Disabled') }}</span>
+            <span>#{{ loop.index }}</span>
+            {% if b.link %}<span>→ <code>{{ b.link }}</code></span>{% endif %}
+          </div>
+          <form method="post" class="wb-editrow">
+            <input type="hidden" name="id" value="{{ b.id }}">
+            <input class="textbox" name="title" value="{{ b.title }}" placeholder="{{ _('Title (optional)') }}" style="flex:1 1 160px;">
+            <input class="textbox" name="link" value="{{ b.link }}" placeholder="{{ _('Link (optional)') }}" style="flex:1 1 180px;">
+            <input class="textbox" name="alt" value="{{ b.alt }}" placeholder="{{ _('Alt text (optional)') }}" style="flex:1 1 140px;">
+            <label class="wb-mini"><input type="checkbox" name="newTab" value="true" {{ 'checked' if b.newTab }}> {{ _('Open in new tab') }}</label>
+            <label class="wb-mini"><input type="checkbox" name="enabled" value="true" {{ 'checked' if b.enabled }}> {{ _('Enable') }}</label>
+            <button name="operation" value="update" type="submit" class="rounded primary button" style="height:30px; padding:0 12px;">
+              <span class="icon icon-check"></span> {{ _('Save') }}
+            </button>
+          </form>
+          <div class="wb-actions" style="margin-top:8px;">
+            <form method="post"><input type="hidden" name="id" value="{{ b.id }}"><input type="hidden" name="dir" value="-1">
+              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 8px;" title="{{ _('Move up') }}"><span class="icon icon-arrow_up"></span></button></form>
+            <form method="post"><input type="hidden" name="id" value="{{ b.id }}"><input type="hidden" name="dir" value="1">
+              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 8px;" title="{{ _('Move down') }}"><span class="icon icon-arrow_down"></span></button></form>
+            <form method="post"><input type="hidden" name="id" value="{{ b.id }}">
+              <button name="operation" value="toggle" type="submit" class="rounded button" style="height:28px; padding:0 10px;">{{ _('Disable') if b.enabled else _('Enable') }}</button></form>
+            <form method="post" onsubmit="return confirm('{{ _('Delete this banner slide?') }}');" style="margin-left:auto;">
+              <input type="hidden" name="id" value="{{ b.id }}">
+              {% if b.file %}<label class="wb-mini"><input type="checkbox" name="deleteFile" value="true"> {{ _('Also delete the uploaded file') }}</label>{% endif %}
+              <button name="operation" value="delete" type="submit" class="rounded button" style="height:28px; padding:0 10px; color:#c0392b;">
+                <span class="icon icon-delete"></span> {{ _('Delete slide') }}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------------- Live preview ---------------- #}
+{% set enabledBanners = config.banners|selectattr('enabled')|list %}
+{% if enabledBanners.length %}
+<div class="section">
+  <div class="section__header"><h1 class="section__title">{{ _('Live Preview') }}</h1></div>
+  <div class="section__body">
+    <div class="wb-preview-wrap" id="wb-preview"
+      data-autoplay="{{ 'true' if config.autoPlay else 'false' }}"
+      data-interval="{{ config.interval }}"
+      data-fit="{{ config.objectFit }}"
+      data-blur="{{ 'true' if config.blurBackground else 'false' }}"
+      data-zoom="{{ 'true' if config.hoverZoom else 'false' }}"
+      data-zoomscale="{{ config.hoverZoomScale }}"
+      style="max-width:{{ config.width }}px; border-radius:{{ config.borderRadius }}px; box-shadow:0 8px 32px rgba(0,0,0,.12);">
+      <div class="wb-preview-slide" style="height:{{ config.height }}px;">
+        {% if config.blurBackground %}<div class="wb-pv-bg" id="wb-pv-bg"></div>{% endif %}
+        <div class="wb-pv-img" id="wb-pv-img" style="background-size:{{ config.objectFit }};"></div>
+      </div>
+      {% if config.showDots and enabledBanners.length > 1 %}
+      <div class="wb-pv-dots" id="wb-pv-dots">
+        {% for b in enabledBanners %}<button type="button" class="wb-pv-dot {{ 'active' if loop.first }}" data-i="{{ loop.index0 }}"></button>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var el = document.getElementById('wb-preview');
+  if (!el) return;
+  var imgs = [{% for b in enabledBanners %}'{{ b.image|e }}'{{ ',' if not loop.last }}{% endfor %}];
+  var bg = document.getElementById('wb-pv-bg');
+  var img = document.getElementById('wb-pv-img');
+  var dots = el.querySelectorAll('.wb-pv-dot');
+  var zoom = el.dataset.zoom === 'true';
+  var scale = parseFloat(el.dataset.zoomscale) || 1.05;
+  var i = 0, timer = null;
+  function show(n){
+    i = (n + imgs.length) % imgs.length;
+    if (bg) bg.style.backgroundImage = "url('" + imgs[i] + "')";
+    img.style.backgroundImage = "url('" + imgs[i] + "')";
+    dots.forEach(function(d, k){ d.classList.toggle('active', k === i); });
+  }
+  dots.forEach(function(d){ d.addEventListener('click', function(){ show(+d.dataset.i); reset(); }); });
+  if (zoom) {
+    el.addEventListener('mouseenter', function(){ img.style.transform = 'scale(' + scale + ')'; });
+    el.addEventListener('mouseleave', function(){ img.style.transform = 'scale(1)'; });
+  }
+  function reset(){ if (timer) clearInterval(timer); if (el.dataset.autoplay === 'true' && imgs.length > 1) timer = setInterval(function(){ show(i+1); }, parseInt(el.dataset.interval) || 5000); }
+  show(0); reset();
+})();
+</script>
+{% endif %}
+
+{# ---------------- Global settings ---------------- #}
+<div class="section">
+  <div class="section__header"><h1 class="section__title">{{ _('Global Settings') }}</h1></div>
+  <div class="section__body">
+    <form method="post">
+      <div class="wb-settings-grid">
+        <div class="wb-check"><input type="checkbox" name="enabled" value="true" {{ 'checked' if config.enabled }}> <label style="margin:0;">{{ _('Enable banner on homepage') }}</label></div>
+        <div class="wb-check"><input type="checkbox" name="autoPlay" value="true" {{ 'checked' if config.autoPlay }}> <label style="margin:0;">{{ _('Auto play') }}</label></div>
+        <div class="wb-field"><label>{{ _('Interval (ms)') }}</label><input class="textbox" type="number" name="interval" value="{{ config.interval }}" min="1000" max="60000"></div>
+        <div class="wb-field"><label>{{ _('Transition effect') }}</label>
+          <select class="select" name="transition">
+            <option value="fade" {{ 'selected' if config.transition == 'fade' }}>{{ _('fade') }}</option>
+            <option value="slide" {{ 'selected' if config.transition == 'slide' }}>{{ _('slide') }}</option>
+          </select></div>
+        <div class="wb-field"><label>{{ _('Width (px)') }}</label><input class="textbox" type="number" name="width" value="{{ config.width }}" min="200" max="4000"></div>
+        <div class="wb-field"><label>{{ _('Height (px)') }}</label><input class="textbox" type="number" name="height" value="{{ config.height }}" min="60" max="2000"></div>
+        <div class="wb-field"><label>{{ _('Border radius (px)') }}</label><input class="textbox" type="number" name="borderRadius" value="{{ config.borderRadius }}" min="0" max="200"></div>
+        <div class="wb-field"><label>{{ _('Image fit') }}</label>
+          <select class="select" name="objectFit">
+            <option value="contain" {{ 'selected' if config.objectFit == 'contain' }}>{{ _('contain') }}</option>
+            <option value="cover" {{ 'selected' if config.objectFit == 'cover' }}>{{ _('cover') }}</option>
+          </select></div>
+        <div class="wb-check"><input type="checkbox" name="blurBackground" value="true" {{ 'checked' if config.blurBackground }}> <label style="margin:0;">{{ _('Blurred background fill') }}</label></div>
+        <div class="wb-check"><input type="checkbox" name="showDots" value="true" {{ 'checked' if config.showDots }}> <label style="margin:0;">{{ _('Show dot indicators') }}</label></div>
+        <div class="wb-check"><input type="checkbox" name="showArrows" value="true" {{ 'checked' if config.showArrows }}> <label style="margin:0;">{{ _('Show arrows') }}</label></div>
+        <div class="wb-check"><input type="checkbox" name="hoverZoom" value="true" {{ 'checked' if config.hoverZoom }}> <label style="margin:0;">{{ _('Enable hover zoom effect') }}</label></div>
+        <div class="wb-field"><label>{{ _('Hover zoom scale') }}</label><input class="textbox" type="number" step="0.01" name="hoverZoomScale" value="{{ config.hoverZoomScale }}" min="1" max="2"></div>
+      </div>
+      <div class="row" style="margin-top:14px;"><div class="columns">
+        <button name="operation" value="settings" type="submit" class="rounded primary button">
+          <span class="icon icon-check"></span> {{ _('Save settings') }}
+        </button>
+      </div></div>
+    </form>
+  </div>
+</div>
+
+<div class="section" style="box-shadow:none; background:transparent;">
+  <div class="section__body" style="text-align:center; padding:10px 0;">
+    <p class="help-text typo" style="margin:0;">@hucoj/welcome-banner · {{ config.banners|length }} {{ _('banner slides') }}</p>
+  </div>
+</div>
+{% endblock %}

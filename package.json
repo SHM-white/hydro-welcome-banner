@@ -1,0 +1,34 @@
+{
+  "name": "@hucoj/welcome-banner",
+  "version": "2.0.0",
+  "description": "Visual welcome-banner manager for HydroOJ \u2014 upload/preview/delete banner slides in the admin control panel, image upload as user attachments, carousel & hover-zoom configuration.",
+  "main": "index.ts",
+  "author": "racel W",
+  "license": "MIT",
+  "files": [
+    "index.ts",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ],
+  "hydro": {
+    "cli": false
+  },
+  "scripts": {
+    "check": "esbuild index.ts --bundle --platform=node --format=cjs --external:hydrooj --external:js-yaml --external:path --outfile=/dev/null",
+    "pack": "npm pack"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0",
+    "hydrooj": "^5.0.0",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "hydro",
+    "hydrooj",
+    "plugin",
+    "addon",
+    "banner",
+    "homepage"
+  ]
+}

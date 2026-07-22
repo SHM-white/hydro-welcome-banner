@@ -1,0 +1,159 @@
+{% set cfg = payload[0] %}
+{% if cfg.banners.length %}
+<style>
+.welcome-banner-container {
+  position: relative;
+  width: 100%;
+  max-width: {{ cfg.width }}px;
+  margin: 0 auto 2rem;
+  overflow: hidden;
+  border-radius: {{ cfg.borderRadius }}px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+.welcome-banner-slider {
+  position: relative;
+  width: 100%;
+  height: {{ cfg.height }}px;
+}
+.banner-slide {
+  position: absolute; inset: 0;
+  opacity: 1; cursor: pointer; background: #ffffff;
+  display: block; text-decoration: none;
+}
+.banner-slide.no-link { cursor: default; }
+.banner-background {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  filter: blur(20px); transform: scale(1.1); opacity: 0.8;
+  {% if not cfg.blurBackground %}display: none;{% endif %}
+}
+.banner-image {
+  position: absolute; inset: 0;
+  background-size: {{ cfg.objectFit }}; background-position: center; background-repeat: no-repeat;
+  transition: transform 0.4s ease; z-index: 1;
+}
+{% if cfg.hoverZoom %}
+.welcome-banner-container:hover .banner-image { transform: scale({{ cfg.hoverZoomScale }}); }
+{% endif %}
+.banner-caption {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 28px 24px 16px; color: #fff;
+  background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+  font-size: 1.1rem; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,.4);
+}
+.banner-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 3; }
+.banner-dots { display: flex; gap: 8px; padding: 8px 16px; background: rgba(0,0,0,.3); border-radius: 20px; backdrop-filter: blur(10px); }
+.banner-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.5); border: none; cursor: pointer; transition: all .3s cubic-bezier(.4,0,.2,1); }
+.banner-dot.active { background: #fff; width: 24px; border-radius: 12px; }
+.banner-dot:hover:not(.active) { background: rgba(255,255,255,.8); transform: scale(1.2); }
+.banner-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+  width: 40px; height: 40px; border: none; border-radius: 50%;
+  background: rgba(0,0,0,.35); color: #fff; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: background .2s;
+}
+.banner-arrow:hover { background: rgba(0,0,0,.55); }
+.banner-arrow.prev { left: 16px; }
+.banner-arrow.next { right: 16px; }
+{% if cfg.transition == 'slide' %}
+.banner-image.sliding { animation: bannerSlideIn .4s ease; }
+@keyframes bannerSlideIn { from { opacity: .3; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+{% else %}
+.banner-image.fading { animation: bannerFadeIn .5s ease; }
+@keyframes bannerFadeIn { from { opacity: 0; } to { opacity: 1; } }
+{% endif %}
+@media (max-width: 768px) {
+  .welcome-banner-slider { height: calc({{ cfg.height }}px * 0.7); }
+  .banner-controls { bottom: 15px; }
+}
+</style>
+
+<div class="welcome-banner-container"
+  data-autoplay="{{ 'true' if cfg.autoPlay else 'false' }}"
+  data-interval="{{ cfg.interval }}"
+  data-transition="{{ cfg.transition }}">
+  <div class="welcome-banner-slider">
+    {% set first = cfg.banners[0] %}
+    <a href="{{ first.link or '#' }}"{% if first.newTab and first.link %} target="_blank" rel="noopener"{% endif %}
+       class="banner-slide{{ '' if first.link else ' no-link' }}" id="current-banner"
+       aria-label="{{ first.alt or first.title }}">
+      <div class="banner-background" style="background-image: url('{{ first.image }}')"></div>
+      <div class="banner-image" style="background-image: url('{{ first.image }}')"></div>
+      <div class="banner-caption" id="banner-caption" {% if not first.title %}style="display:none;"{% endif %}>{{ first.title }}</div>
+    </a>
+  </div>
+
+  {% if cfg.showArrows and cfg.banners.length > 1 %}
+  <button class="banner-arrow prev" id="banner-prev" aria-label="Previous">‹</button>
+  <button class="banner-arrow next" id="banner-next" aria-label="Next">›</button>
+  {% endif %}
+
+  {% if cfg.showDots and cfg.banners.length > 1 %}
+  <div class="banner-controls">
+    <div class="banner-dots">
+      {% for item in cfg.banners %}
+      <button class="banner-dot {{ 'active' if loop.first else '' }}" data-slide="{{ loop.index0 }}"></button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function() {
+  class WelcomeBanner {
+    constructor(container) {
+      this.container = container;
+      this.el = container.querySelector('#current-banner');
+      this.bg = this.el.querySelector('.banner-background');
+      this.img = this.el.querySelector('.banner-image');
+      this.caption = this.el.querySelector('#banner-caption');
+      this.dots = container.querySelectorAll('.banner-dot');
+      this.current = 0;
+      this.timer = null;
+      this.autoPlay = container.dataset.autoplay === 'true';
+      this.interval = parseInt(container.dataset.interval) || 5000;
+      this.transition = container.dataset.transition || 'fade';
+      this.banners = [
+        {% for item in cfg.banners %}
+        { image: '{{ item.image|e }}', link: '{{ item.link|e }}', title: '{{ item.title|e }}', alt: '{{ item.alt|e }}', newTab: {{ 'true' if item.newTab else 'false' }} }{{ ',' if not loop.last }}
+        {% endfor %}
+      ];
+      this.init();
+    }
+    init() {
+      this.bindEvents();
+      if (this.autoPlay && this.banners.length > 1) this.start();
+    }
+    bindEvents() {
+      this.dots.forEach((dot, index) => dot.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); this.go(index); this.restart(); }));
+      var prev = this.container.querySelector('#banner-prev');
+      var next = this.container.querySelector('#banner-next');
+      if (prev) prev.addEventListener('click', (e) => { e.preventDefault(); this.go(this.current - 1); this.restart(); });
+      if (next) next.addEventListener('click', (e) => { e.preventDefault(); this.go(this.current + 1); this.restart(); });
+      this.container.addEventListener('mouseenter', () => this.stop());
+      this.container.addEventListener('mouseleave', () => { if (this.autoPlay && this.banners.length > 1) this.start(); });
+      if (!this.banners[0].link) this.el.addEventListener('click', (e) => e.preventDefault());
+    }
+    go(index) {
+      this.current = (index + this.banners.length) % this.banners.length;
+      var b = this.banners[this.current];
+      if (b.link) { this.el.href = b.link; this.el.classList.remove('no-link'); if (b.newTab) { this.el.target = '_blank'; this.el.rel = 'noopener'; } else { this.el.removeAttribute('target'); } }
+      else { this.el.href = '#'; this.el.classList.add('no-link'); }
+      if (this.bg) this.bg.style.backgroundImage = "url('" + b.image + "')";
+      this.img.style.backgroundImage = "url('" + b.image + "')";
+      if (this.caption) { this.caption.textContent = b.title; this.caption.style.display = b.title ? '' : 'none'; }
+      var cls = this.transition === 'slide' ? 'sliding' : 'fading';
+      this.img.classList.remove(cls); void this.img.offsetWidth; this.img.classList.add(cls);
+      this.dots.forEach((dot, i) => dot.classList.toggle('active', i === this.current));
+    }
+    start() { this.stop(); this.timer = setInterval(() => this.go(this.current + 1), this.interval); }
+    stop() { if (this.timer) { clearInterval(this.timer); this.timer = null; } }
+    restart() { if (this.autoPlay && this.banners.length > 1) this.start(); }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.welcome-banner-container').forEach((c) => new WelcomeBanner(c));
+  });
+})();
+</script>
+{% endif %}
