@@ -288,6 +288,25 @@ class BannerManageHandler extends Handler {
         this.response.redirect = this.url('manage_banner');
     }
 
+    // operation=reorder — apply a full drag-and-drop ordering. `order` is a
+    // comma-separated list of banner ids in their new visual order.
+    @param('order', Types.String)
+    async postReorder(domainId: string, order: string) {
+        const ids = order.split(',').map((s) => s.trim()).filter(Boolean);
+        const config = getConfig();
+        const map = new Map(config.banners.map((b) => [b.id, b]));
+        const reordered: BannerItem[] = [];
+        for (const id of ids) {
+            const item = map.get(id);
+            if (item) { reordered.push(item); map.delete(id); }
+        }
+        // Keep any slides the client didn't mention (e.g. added concurrently).
+        for (const item of map.values()) reordered.push(item);
+        config.banners = reordered;
+        await saveConfig(config);
+        this.response.redirect = this.url('manage_banner');
+    }
+
     // operation=delete — remove a slide, and its backing attachment when asked.
     @param('id', Types.String)
     @param('deleteFile', Types.Boolean)
@@ -385,6 +404,7 @@ export function apply(ctx: Context) {
         'No banner slides yet. Upload an image or add one by URL above.': '暂无横幅。请在上方上传图片或通过链接添加。',
         'Move up': '上移',
         'Move down': '下移',
+        'Drag to reorder': '拖拽排序',
         Enable: '启用',
         Disable: '停用',
         Enabled: '已启用',

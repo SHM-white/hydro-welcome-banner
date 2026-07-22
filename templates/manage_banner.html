@@ -9,6 +9,17 @@
   border-radius: 10px; padding: 12px; background: var(--block-background, #fff);
 }
 .wb-card.disabled { opacity: .55; }
+.wb-card.dragging { opacity: .45; outline: 2px dashed #3b82f6; outline-offset: -2px; }
+.wb-card.wb-drop-before { box-shadow: 0 -3px 0 #3b82f6; }
+.wb-card.wb-drop-after { box-shadow: 0 3px 0 #3b82f6; }
+.wb-drag {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  width: 22px; margin: -12px 0 -12px -6px; padding: 0 2px;
+  cursor: grab; color: #bbb; user-select: none; letter-spacing: -3px;
+  font-size: 18px; line-height: 1;
+}
+.wb-drag:hover { color: #3b82f6; }
+.wb-drag:active { cursor: grabbing; }
 .wb-thumb {
   flex: 0 0 200px; height: 112px; border-radius: 8px; overflow: hidden;
   background: #f2f3f5 center/contain no-repeat;
@@ -114,7 +125,8 @@
     {% else %}
     <div class="wb-cards">
       {% for b in config.banners %}
-      <div class="wb-card {{ '' if b.enabled else 'disabled' }}">
+      <div class="wb-card {{ '' if b.enabled else 'disabled' }}" data-id="{{ b.id }}">
+        <div class="wb-drag" title="{{ _('Drag to reorder') }}" aria-label="{{ _('Drag to reorder') }}">⠿</div>
         <div class="wb-thumb {{ config.objectFit }}" style="background-image:url('{{ b.image }}');"></div>
         <div class="wb-card__body">
           <div class="wb-card__meta">
@@ -135,11 +147,13 @@
           </form>
           <div class="wb-actions" style="margin-top:8px;">
             <form method="post"><input type="hidden" name="id" value="{{ b.id }}"><input type="hidden" name="dir" value="-1">
-              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 8px;" title="{{ _('Move up') }}"><span class="icon icon-arrow_up"></span></button></form>
+              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 10px;" title="{{ _('Move up') }}">
+                <span class="icon icon-expand_less"></span> {{ _('Move up') }}</button></form>
             <form method="post"><input type="hidden" name="id" value="{{ b.id }}"><input type="hidden" name="dir" value="1">
-              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 8px;" title="{{ _('Move down') }}"><span class="icon icon-arrow_down"></span></button></form>
+              <button name="operation" value="move" type="submit" class="rounded button" style="height:28px; padding:0 10px;" title="{{ _('Move down') }}">
+                <span class="icon icon-expand_more"></span> {{ _('Move down') }}</button></form>
             <form method="post"><input type="hidden" name="id" value="{{ b.id }}">
-              <button name="operation" value="toggle" type="submit" class="rounded button" style="height:28px; padding:0 10px;">{{ _('Disable') if b.enabled else _('Enable') }}</button></form>
+              <button name="operation" value="toggle" type="submit" class="rounded button" style="height:28px; padding:0 12px;">{{ _('Disable') if b.enabled else _('Enable') }}</button></form>
             <form method="post" onsubmit="return confirm('{{ _('Delete this banner slide?') }}');" style="margin-left:auto;">
               <input type="hidden" name="id" value="{{ b.id }}">
               {% if b.file %}<label class="wb-mini"><input type="checkbox" name="deleteFile" value="true"> {{ _('Also delete the uploaded file') }}</label>{% endif %}
@@ -152,6 +166,51 @@
       </div>
       {% endfor %}
     </div>
+    <form method="post" id="wb-reorder-form" style="display:none;">
+      <input type="hidden" name="operation" value="reorder">
+      <input type="hidden" name="order" id="wb-reorder-order">
+    </form>
+    <script>
+    (function(){
+      var container = document.querySelector('.wb-cards');
+      if (!container) return;
+      var cards = Array.prototype.slice.call(container.querySelectorAll('.wb-card'));
+      var dragEl = null;
+      function clearMarks(){ cards.forEach(function(c){ c.classList.remove('wb-drop-before','wb-drop-after'); }); }
+      cards.forEach(function(card){
+        var handle = card.querySelector('.wb-drag');
+        if (!handle) return;
+        // Only start a drag from the grip handle, so the inline inputs stay usable.
+        handle.addEventListener('mousedown', function(){ card.setAttribute('draggable','true'); });
+        handle.addEventListener('touchstart', function(){ card.setAttribute('draggable','true'); }, {passive:true});
+        card.addEventListener('dragstart', function(e){
+          dragEl = card; card.classList.add('dragging');
+          if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', card.dataset.id); } catch(_){} }
+        });
+        card.addEventListener('dragend', function(){
+          card.classList.remove('dragging'); card.removeAttribute('draggable'); clearMarks();
+          if (!dragEl) return;
+          var order = Array.prototype.slice.call(container.querySelectorAll('.wb-card')).map(function(c){ return c.dataset.id; });
+          var original = cards.map(function(c){ return c.dataset.id; });
+          dragEl = null;
+          if (order.join(',') !== original.join(',')) {
+            document.getElementById('wb-reorder-order').value = order.join(',');
+            document.getElementById('wb-reorder-form').submit();
+          }
+        });
+        card.addEventListener('dragover', function(e){
+          e.preventDefault();
+          if (!dragEl || dragEl === card) return;
+          var rect = card.getBoundingClientRect();
+          var after = (e.clientY - rect.top) > rect.height / 2;
+          clearMarks();
+          card.classList.add(after ? 'wb-drop-after' : 'wb-drop-before');
+          if (after) { if (card.nextSibling !== dragEl) container.insertBefore(dragEl, card.nextSibling); }
+          else { if (card.previousSibling !== dragEl) container.insertBefore(dragEl, card); }
+        });
+      });
+    })();
+    </script>
     {% endif %}
   </div>
 </div>
