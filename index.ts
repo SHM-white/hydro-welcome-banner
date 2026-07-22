@@ -237,16 +237,16 @@ class BannerManageHandler extends Handler {
         this.response.redirect = this.url('manage_banner');
     }
 
-    // operation=update — edit a single slide's metadata.
+    // operation=update — edit a single slide's metadata. Enable/disable is
+    // handled separately by postToggle, so it is intentionally not touched here.
     @param('id', Types.String)
     @param('link', Types.String, true)
     @param('title', Types.String, true)
     @param('alt', Types.String, true)
     @param('newTab', Types.Boolean)
-    @param('enabled', Types.Boolean)
     async postUpdate(
         domainId: string, id: string, link = '', title = '', alt = '',
-        newTab = false, enabled = false,
+        newTab = false,
     ) {
         const config = getConfig();
         const item = config.banners.find((b) => b.id === id);
@@ -255,7 +255,6 @@ class BannerManageHandler extends Handler {
         item.title = title;
         item.alt = alt;
         item.newTab = newTab;
-        item.enabled = enabled;
         await saveConfig(config);
         this.response.redirect = this.url('manage_banner');
     }
