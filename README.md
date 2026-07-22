@@ -95,4 +95,4 @@ pm2 restart hydrooj
 
 ## License
 
-MIT
+AGPL-3.0-or-later

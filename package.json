@@ -4,7 +4,7 @@
   "description": "Visual welcome-banner manager for HydroOJ \u2014 upload/preview/delete banner slides in the admin control panel, image upload as user attachments, carousel & hover-zoom configuration.",
   "main": "index.ts",
   "author": "racel W",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "files": [
     "index.ts",
     "templates/",
