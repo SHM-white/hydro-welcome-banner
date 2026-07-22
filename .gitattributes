@@ -1,0 +1,5 @@
+# The implementation is TypeScript; the Nunjucks/HTML templates are large but
+# are markup, not the project's language. Exclude them (and docs) from GitHub
+# Linguist stats so the repo is classified as TypeScript.
+templates/**/*.html linguist-detectable=false
+docs/** linguist-documentation

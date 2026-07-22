@@ -27,7 +27,7 @@
 以运行 HydroOJ 的用户身份执行：
 
 ```bash
-hydrooj install https://github.com/DotRacel/hydro-welcome-banner/releases/download/v2.0.0/hydrooj-welcome-banner-2.0.0.tgz
+hydrooj install https://github.com/DotRacel/hydro-welcome-banner/releases/download/v0.1.0/hydrooj-welcome-banner-0.1.0.tgz
 pm2 restart hydrooj      # 或以你的方式重启 hydrooj 进程
 ```
 
