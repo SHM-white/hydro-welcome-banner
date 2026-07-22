@@ -6,6 +6,12 @@
 
 ## 功能展示
 
+首页横幅轮播效果：
+
+<img width="920" alt="homepage banner" src="docs/screenshot-homepage.png" />
+
+后台可视化管理页面：
+
 <img width="920" alt="banner management" src="docs/screenshot-manage.png" />
 
 ## 功能特性
