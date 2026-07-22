@@ -394,6 +394,8 @@ export function apply(ctx: Context) {
         manage_banner: '封面横幅',
         'Banner Management': '封面横幅管理',
         'Welcome Banner': '欢迎横幅',
+        'Add banner': '添加横幅',
+        'Slides': '横幅列表',
         'Add / upload banner slides, reorder them and tune the carousel — changes take effect on the homepage immediately.':
             '上传 / 添加横幅图片、调整顺序并配置轮播效果，保存后主页即时生效。',
         'Upload image': '上传图片',
