@@ -19,9 +19,7 @@
     "pack": "npm pack"
   },
   "devDependencies": {
-    "esbuild": "^0.23.0",
-    "hydrooj": "^5.0.0",
-    "typescript": "^5.9.3"
+    "esbuild": "^0.23.0"
   },
   "keywords": [
     "hydro",
