@@ -124,11 +124,11 @@
     }
     async init() {
       this.bindEvents();
-      if (this.banners.length > 1) await this.preloadImages();
+      if (this.banners.length) await this.preloadImages();
       if (this.container.isConnected && this.autoPlay && this.banners.length > 1) this.start();
     }
     preloadImages() {
-      var pending = this.banners.slice(1).map((banner) => this.preloadImage(banner.image));
+      var pending = this.banners.map((banner) => this.preloadImage(banner.image));
       return Promise.allSettled(pending);
     }
     preloadImage(src) {
