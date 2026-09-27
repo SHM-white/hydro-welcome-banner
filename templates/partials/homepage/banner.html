@@ -111,6 +111,7 @@
       this.dots = container.querySelectorAll('.banner-dot');
       this.current = 0;
       this.timer = null;
+      this.preloadedImages = [];
       this.autoPlay = container.dataset.autoplay === 'true';
       this.interval = parseInt(container.dataset.interval) || 5000;
       this.transition = container.dataset.transition || 'fade';
@@ -121,9 +122,32 @@
       ];
       this.init();
     }
-    init() {
+    async init() {
       this.bindEvents();
-      if (this.autoPlay && this.banners.length > 1) this.start();
+      if (this.banners.length > 1) await this.preloadImages();
+      if (this.container.isConnected && this.autoPlay && this.banners.length > 1) this.start();
+    }
+    preloadImages() {
+      var pending = this.banners.slice(1).map((banner) => this.preloadImage(banner.image));
+      return Promise.allSettled(pending);
+    }
+    preloadImage(src) {
+      return new Promise((resolve) => {
+        var image = new Image();
+        var finished = false;
+        var finish = () => {
+          if (finished) return;
+          finished = true;
+          this.preloadedImages.push(image);
+          if (image.naturalWidth && typeof image.decode === 'function') {
+            image.decode().catch(() => {}).then(resolve);
+          } else resolve();
+        };
+        image.onload = finish;
+        image.onerror = finish;
+        image.src = src;
+        if (image.complete) finish();
+      });
     }
     bindEvents() {
       this.dots.forEach((dot, index) => dot.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); this.go(index); this.restart(); }));
@@ -133,15 +157,25 @@
       if (next) next.addEventListener('click', (e) => { e.preventDefault(); this.go(this.current + 1); this.restart(); });
       this.container.addEventListener('mouseenter', () => this.stop());
       this.container.addEventListener('mouseleave', () => { if (this.autoPlay && this.banners.length > 1) this.start(); });
-      if (!this.banners[0].link) this.el.addEventListener('click', (e) => e.preventDefault());
+      this.el.addEventListener('click', (e) => { if (!this.banners[this.current].link) e.preventDefault(); });
     }
     go(index) {
       this.current = (index + this.banners.length) % this.banners.length;
       var b = this.banners[this.current];
-      if (b.link) { this.el.href = b.link; this.el.classList.remove('no-link'); if (b.newTab) { this.el.target = '_blank'; this.el.rel = 'noopener'; } else { this.el.removeAttribute('target'); } }
-      else { this.el.href = '#'; this.el.classList.add('no-link'); }
+      if (b.link) {
+        this.el.href = b.link;
+        this.el.classList.remove('no-link');
+        if (b.newTab) { this.el.target = '_blank'; this.el.rel = 'noopener'; }
+        else { this.el.removeAttribute('target'); this.el.removeAttribute('rel'); }
+      } else {
+        this.el.href = '#';
+        this.el.classList.add('no-link');
+        this.el.removeAttribute('target');
+        this.el.removeAttribute('rel');
+      }
       if (this.bg) this.bg.style.backgroundImage = "url('" + b.image + "')";
       this.img.style.backgroundImage = "url('" + b.image + "')";
+      this.el.setAttribute('aria-label', b.alt || b.title || '');
       if (this.caption) { this.caption.textContent = b.title; this.caption.style.display = b.title ? '' : 'none'; }
       var cls = this.transition === 'slide' ? 'sliding' : 'fading';
       this.img.classList.remove(cls); void this.img.offsetWidth; this.img.classList.add(cls);
@@ -151,9 +185,31 @@
     stop() { if (this.timer) { clearInterval(this.timer); this.timer = null; } }
     restart() { if (this.autoPlay && this.banners.length > 1) this.start(); }
   }
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.welcome-banner-container').forEach((c) => new WelcomeBanner(c));
-  });
+
+  function initWelcomeBanners(root) {
+    var containers = [];
+    if (root && root.matches && root.matches('.welcome-banner-container')) containers.push(root);
+    if (root && root.querySelectorAll) containers = containers.concat(Array.from(root.querySelectorAll('.welcome-banner-container')));
+    if (!root) containers = Array.from(document.querySelectorAll('.welcome-banner-container'));
+    containers.forEach((container) => {
+      if (container.dataset.welcomeBannerInitialized === 'true') return;
+      container.dataset.welcomeBannerInitialized = 'true';
+      new WelcomeBanner(container);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initWelcomeBanners(document), { once: true });
+  } else {
+    initWelcomeBanners(document);
+  }
+
+  if (window.jQuery && !window.__welcomeBannerVjHook) {
+    window.__welcomeBannerVjHook = true;
+    window.jQuery(document).on('vjContentNew.welcomeBanner', function(e) {
+      initWelcomeBanners(e.target);
+    });
+  }
 })();
 </script>
 {% endif %}
